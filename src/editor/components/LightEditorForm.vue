@@ -8,16 +8,8 @@
                             <el-option v-for="item in child?.items" :label="item.label" :value="item.value"></el-option>
                         </ElSelect>
                     </template>
-                    <template v-if="key=='color'" >
-                        <ColorInput v-model="lightProps[key]" @change="valueChange"/>
-                    </template>
-
-                    <template v-if="key=='position'">
-                        <Vec3Input v-model="lightProps[key]" @change="valueChange"/>
-                    </template>
-
-                    <template v-if="key=='itensity'">
-                        <el-slider v-model="lightProps[key]" :max="9000" :step="10" @change="valueChange" />
+                    <template v-else >
+                        <el-slider :max="3" :step="0.01" v-model="lightProps[key]" @change="() => valueChange()" />
                     </template>
                 </el-form-item>
             </template>
@@ -27,11 +19,9 @@
 
 <script setup lang="ts">
 import { ref, toRef, Ref } from 'vue'
-import { DirectionalLight } from "ideagraphics";
-import ColorInput from './formitem/ColorInput.vue';
-import Vec3Input from './formitem/Vec3Input.vue';
+import { Light } from "ideagraphics";
 interface Props {
-    modelValue: DirectionalLight
+    modelValue: Light
 }
 const props = defineProps<Props>()
 
@@ -39,7 +29,7 @@ const modelValue = toRef(props, 'modelValue')
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
-const lightProps: Ref<DirectionalLight> = ref(modelValue.value)
+const lightProps: Ref<Light> = ref(modelValue.value)
 
 const valueChange = () => {
     emit('update:modelValue', lightProps)
@@ -62,30 +52,23 @@ const lightSchemaJson = {
                 value: 1
             }]
         },
-        'position': {
-            type: 'object',
-            description: '光照位置',
-            remark: `光照位置`,
-            kind: 'vec3',
-            items:[]
-        },
-
-        'color': {
-            type: 'object',
-            description: '光照颜色',
-            remark: '光照颜色',
-            kind: 'color',
-            items:[]
-
-        },
-
-        itensity: {
+        'brightness': {
             type: 'number',
-            description: '照度',
-            remark: '照度',
-            kind: 'input',
+            description: '光照强度',
+            remark: `光照位置`,
             items:[]
-
+        },
+        'gamma': {
+            type: 'number',
+            description: '伽马校正',
+            remark: `伽马校正`,
+            items:[]
+        },
+        'exposure': {
+            type: 'number',
+            description: '曝光度',
+            remark: `曝光度`,
+            items:[]
         }
     }
 

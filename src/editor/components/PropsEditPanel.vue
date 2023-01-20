@@ -9,7 +9,7 @@
             </el-collapse>
 
             <el-collapse v-model="collpase_active" >
-                <el-collapse-item title="灯光" name="material">
+                <el-collapse-item title="灯光" name="light">
                     <LightEditorForm  v-model="light" @change="propsChange"/>
                 </el-collapse-item>
             </el-collapse>
@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { DirectionalLight } from 'ideagraphics';
+import { Light } from 'ideagraphics';
 import { PBRMaterial } from 'ideagraphics';
 import {ref} from 'vue'
 import LightEditorForm from './LightEditorForm.vue';
@@ -29,7 +29,11 @@ const emit = defineEmits(['propsSet'])
 const collpase_active = ref('material')
 
 const material = new PBRMaterial();
-const light = new DirectionalLight();
+const light = new Light();
+
+console.log(material)
+console.log( light)
+
 
 const propsChange = () => {
     emit('propsSet', { material, light})

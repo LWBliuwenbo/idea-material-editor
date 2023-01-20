@@ -43,11 +43,6 @@ const emit = defineEmits([
 ])
 const meshs = ref([
     {
-        image: CubeImage,
-        id: 'Cube',
-        name: '立方体'
-    },
-    {
         image: SphereImage,
         id: 'Sphere',
         name: '球体'

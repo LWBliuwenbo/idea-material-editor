@@ -10,13 +10,12 @@
 </template>
 
 <script setup lang="ts">
-import {Engine, Camera,Cube, Sphere,DirectionalLight, PbrLight, PBRMaterial,Vec3,Texture } from "ideagraphics";
-import { onMounted } from "vue";
+import {Engine, Camera, Sphere, PbrLight, PBRMaterial,Vec3 } from "ideagraphics";
+import { onMounted,ref } from "vue";
 import MeshListPanel from "./MeshListPanel.vue";
 import PropsEditPanel from "./PropsEditPanel.vue";
 
 enum MeshID {
-    Cube= 'Cube',
     Sphere= 'Sphere'
 }
 interface mesh {
@@ -25,31 +24,37 @@ interface mesh {
     name: string
 }
 
+interface Meshs {
+    Sphere: Sphere
+}
+
 interface EditProps {
     light: PbrLight,
     material: PBRMaterial
 }
 
 const camera = new Camera();
-const light = new DirectionalLight();
+const light = new PbrLight();
 
-const meshs = {
-    Cube: new Cube(),
-    Sphere: new Sphere()
-}
+let meshs:Meshs;
 
-const currentMesh : mesh = {
-    id: MeshID.Cube,
+const currentMesh  = ref({
+    id: MeshID.Sphere,
     name: '',
     image: ''
-}
+})
 
 let engine: Engine;
-let material = new PBRMaterial();
+const material : PBRMaterial = new PBRMaterial();
 
 const engineInit = async () => {
     engine = new Engine('editor-canvas')
     engine.setLight(light)
+
+    meshs = {
+        Sphere: new Sphere(engine.gl, 0.5, 64, 64)
+    }
+    
     camera.lookAt(
         new Vec3(0, 0, 3),
         new Vec3(0, 0, 0),
@@ -58,8 +63,8 @@ const engineInit = async () => {
 
     engine.setCamera(camera)
 
-    material.matrialDiffuseTexture = await Texture.createTexture(engine.gl, './brickwall.jpg') as Texture
-    material.normalMap =  await Texture.createTexture(engine.gl, './brickwall_normal.jpg') as Texture
+    // material.matrialDiffuseTexture = await Texture.createTexture(engine.gl, './brickwall.jpg') as Texture
+    // material.normalMap =  await Texture.createTexture(engine.gl, './brickwall_normal.jpg') as Texture
     
     let roateX = 0;
     let roateY = 0;
@@ -71,28 +76,29 @@ const engineInit = async () => {
     });
 
     // const cube = new Cube();
-    const mesh = meshs[currentMesh.id];
-    mesh.setPBRMaterial(material)
+    const mesh = meshs[currentMesh.value.id];
     engine.addGeo(mesh)
+    engine.drawInit();
 
 
 }
 const engineRender =  () => {    
-    engine.pipelineRender()
+    engine.render();
 }
 
 const propsSet = (props:EditProps) => {
     material.setProps(props.material)
     light.setProps(props.light);
-    engine.scene[0].setPBRMaterial(material)
+    engine.scene[0].setMaterial(material)
     engine.clearAnimate();
+    engine.drawInitLight();
     engineRender();
 }
 
 const changeMesh = (mesh: mesh) => {
     engine.clear();
     const meshInstance = meshs[mesh.id];
-    meshInstance.setPBRMaterial(material)
+    meshInstance.setMaterial(material)
     engine.addGeo(meshInstance)
     engineRender();
 }

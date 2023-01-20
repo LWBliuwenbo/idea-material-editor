@@ -3,7 +3,12 @@
         <el-form :model="materialProps" label-width="120px">
             <template v-for="(child, key) in materialSchemaJson.properties">
                 <el-form-item :label="child.description">
-                    <el-slider :max="1" :step="0.01" v-model="materialProps[key]" @change="() => valueChange()" />
+                    <template v-if="key=='baseColor'" >
+                        <ColorInput v-model="materialProps[key]" @change="valueChange"/>
+                    </template>
+                    <template v-else>
+                        <el-slider :max="1" :step="0.01" v-model="materialProps[key]" @change="() => valueChange()" />
+                    </template>
                 </el-form-item>
             </template>
         </el-form>
@@ -12,7 +17,8 @@
 
 <script setup lang="ts">
 import { ref, toRef, Ref } from 'vue'
-import { PBRMaterial } from "@/engine/Material";
+import { PBRMaterial } from "ideagraphics";
+import ColorInput from './formitem/ColorInput.vue';
 interface Props {
     modelValue: PBRMaterial
 }
@@ -32,6 +38,12 @@ const valueChange = () => {
 const materialSchemaJson = {
     type: 'object',
     properties: {
+        'baseColor':{
+            type: 'object',
+            description: '金属度',
+            kind: 'color',
+            remark: `金属度，规定电介质为0，金属为1；当值趋向1时：弱化漫反射比率，强化镜面反射强度，同时镜面反射逐渐附带上金属色半导体材质情况特殊，尽量避免使用半导体调试效果`
+        },
         'metallic': {
             type: 'number',
             description: '金属度',
