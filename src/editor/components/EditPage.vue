@@ -1,31 +1,38 @@
 <template>
     <div class="editor">
-        <MeshListPanel v-model="currentMesh" @change="changeMesh" />
+        <MeshListPanel v-model="currentModel" @change="changeModel" />
         <div class="view-panel">
             <canvas id="editor-canvas" width="1000" height="1000"></canvas>
         </div>
-        <PropsEditPanel @props-set="propsSet" />
+        <!-- <div class="hiderimage-panel" >
+            <canvas id="hide-canvas" width="1000" height="1000" ></canvas>
+        </div> -->
+        <PropsEditPanel @props-set="propsSet" @camera-change="cameraChange" @env-set="setEnv" />
     </div>
-    
+
 </template>
 
 <script setup lang="ts">
-import {Engine, Camera, Sphere, PbrLight, PBRMaterial,Vec3 } from "ideagraphics";
-import { onMounted,ref } from "vue";
+import { Engine, Camera, PbrLight, PBRMaterial, Vec3, Texture, Model } from "ideagraphics";
+
+import { onMounted, ref, nextTick } from "vue";
 import MeshListPanel from "./MeshListPanel.vue";
 import PropsEditPanel from "./PropsEditPanel.vue";
 
 enum MeshID {
-    Sphere= 'Sphere'
+    Sphere = 'Sphere',
+    Teapot = 'Teapot'
 }
-interface mesh {
+interface ModelProp {
     image: string,
     id: MeshID,
     name: string
+    modelurl: string,
+    scale: number
 }
 
-interface Meshs {
-    Sphere: Sphere
+interface CameraProps {
+    roateVec: Vec3
 }
 
 interface EditProps {
@@ -36,82 +43,114 @@ interface EditProps {
 const camera = new Camera();
 const light = new PbrLight();
 
-let meshs:Meshs;
-
-const currentMesh  = ref({
+const currentModel = ref({
     id: MeshID.Sphere,
-    name: '',
-    image: ''
+    modelurl: '/materialeditor/model/sphere.obj',
+    name: '球体',
+    scale: 0.5
 })
 
+
+
 let engine: Engine;
-const material : PBRMaterial = new PBRMaterial();
 
-const engineInit = async () => {
-    engine = new Engine('editor-canvas')
-    engine.setLight(light)
 
-    meshs = {
-        Sphere: new Sphere(engine.gl, 0.5, 64, 64)
-    }
-    
+const cameraInit = () => {
+
     camera.lookAt(
         new Vec3(0, 0, 3),
         new Vec3(0, 0, 0),
         new Vec3(0, 1, 0)
     ).persective(45, engine.canvas.width / engine.canvas.height, 0.1, 5);
+}
 
+const engineInit = async () => {
+    engine = new Engine('editor-canvas')
+    engine.setLight(light)
+
+    cameraInit();
     engine.setCamera(camera)
 
     // material.matrialDiffuseTexture = await Texture.createTexture(engine.gl, './brickwall.jpg') as Texture
     // material.normalMap =  await Texture.createTexture(engine.gl, './brickwall_normal.jpg') as Texture
-    
-    let roateX = 0;
-    let roateY = 0;
-    engine.addMouseMoveListener((degx: number, degy: number)=>{
-        roateX += degx;
-        roateY += degy;
-        engine.scene[0].roateX(roateX)
-        engine.scene[0].roateY(roateY)
-    });
-
     // const cube = new Cube();
-    const mesh = meshs[currentMesh.value.id];
-    engine.addGeo(mesh)
+    // const mesh = meshs[currentMesh.value.id];
+    // engine.addGeo(mesh)
+
+
+    const model = new Model(engine.gl, currentModel.value.id)
+    await model.loadOBJ(currentModel.value.modelurl, currentModel.value.scale)
+
+    engine.addModel(model)
+
+    await setEnv(false)
+    // const ibl = new IBL(engine.gl, cubenv, model, light)
+    // engine.setIBL(ibl)
     engine.drawInit();
 
 
 }
-const engineRender =  () => {    
+const engineRender = () => {
     engine.render();
 }
 
-const propsSet = (props:EditProps) => {
-    material.setProps(props.material)
-    light.setProps(props.light);
-    engine.scene[0].setMaterial(material)
-    engine.clearAnimate();
-    engine.drawInitLight();
-    engineRender();
+const propsSet = (props: EditProps) => {
+    engine.updateMaterial(0, props.material)
+    engine.updateLight(props.light);
 }
 
-const changeMesh = (mesh: mesh) => {
+const changeModel = async (modelinfo: ModelProp) => {
+    const model = new Model(engine.gl, modelinfo.id)
+    await model.loadOBJ(modelinfo.modelurl, modelinfo.scale)
     engine.clear();
-    const meshInstance = meshs[mesh.id];
-    meshInstance.setMaterial(material)
-    engine.addGeo(meshInstance)
+    engine.addModel(model)
     engineRender();
 }
 
-onMounted( async()=>{
-   await engineInit();
+const setEnv = async (showEnv: boolean) => {
+    if (showEnv) {
+        const cubenv = await Texture.createCubeTexture(engine.gl, 1321, 1321,
+            [
+                './skybox/front.jpg',
+                './skybox/back.jpg',
+                './skybox/top.jpg',
+                './skybox/bottom.jpg',
+                './skybox/right.jpg',
+                './skybox/left.jpg',
+            ]) as Texture
+
+    
+            engine.setEnv(cubenv);
+    
+    }else {
+        engine.setEnv(null);
+    }
+    engine.drawInit();
+    engine.render();
+}
+const cameraChange = (cameraProps: CameraProps) => {
+    cameraInit();
+
+    camera.roateViewX(cameraProps.roateVec.x)
+    camera.roateViewY(cameraProps.roateVec.y)
+
+    engine.updateCamera(camera)
+
+    engine.upateEnv(cameraProps.roateVec.x, cameraProps.roateVec.y)
+}
+
+onMounted(async () => {
+    await nextTick()
+    await engineInit();
     engineRender();
 })
+
 
 </script>
 <style>
 .editor {
     display: flex;
+    justify-content: space-between;
 }
 </style>
 

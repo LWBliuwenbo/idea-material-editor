@@ -1,6 +1,10 @@
 <template>
     <div class="props-edit-panel">
-        <div class="props-edit-panel-title">材质设置</div>
+        <div class="props-edit-panel-title">渲染设置</div>
+        <div> <span>是否显示天空盒</span> <span>
+
+            <ElCheckbox v-model="showEnv" @change="changeShowEnv"></ElCheckbox>
+        </span> </div>
         <div class="props-edit-panel-body">
             <el-collapse v-model="collpase_active" >
                 <el-collapse-item title="材质" name="material">
@@ -13,31 +17,45 @@
                     <LightEditorForm  v-model="light" @change="propsChange"/>
                 </el-collapse-item>
             </el-collapse>
+            <el-collapse v-model="collpase_active" >
+                <el-collapse-item title="相机" name="camera">
+                    <CameraEditor  v-model="camera" @change="cameraChange"/>
+                </el-collapse-item>
+            </el-collapse>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { Light } from 'ideagraphics';
+import { Camera, Light, Vec3 } from 'ideagraphics';
 import { PBRMaterial } from 'ideagraphics';
 import {ref} from 'vue'
+import CameraEditor from './CameraEditor.vue';
 import LightEditorForm from './LightEditorForm.vue';
 import MaterialEditorForm from './MaterialEditorForm.vue';
 
-const emit = defineEmits(['propsSet'])
+const emit = defineEmits(['propsSet', 'cameraChange', 'envSet'])
 
 const collpase_active = ref('material')
-
+const showEnv = ref(false)
 const material = new PBRMaterial();
 const light = new Light();
+const camera = ref({
+    roateVec: new Vec3(0,0,0)
+});
 
-console.log(material)
-console.log( light)
-
-
-const propsChange = () => {
-    emit('propsSet', { material, light})
+const changeShowEnv = () => {
+    emit('envSet', showEnv.value)
 }
+const propsChange = () => {
+    emit('propsSet', { material, light, camera})
+}
+
+const cameraChange = (camera: Camera) => {
+    emit('cameraChange',  camera)
+}
+
+
 </script>
 
 <style>
@@ -46,9 +64,6 @@ const propsChange = () => {
 }
 .props-edit-panel {
     width: 350px;
-    position: fixed;
-    right: 0;
-    top:0;
     padding: 20px 40px;
 }
 </style>

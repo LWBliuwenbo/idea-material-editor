@@ -32,8 +32,8 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const lightProps: Ref<Light> = ref(modelValue.value)
 
 const valueChange = () => {
-    emit('update:modelValue', lightProps)
-    emit('change', lightProps)
+    emit('update:modelValue', lightProps.value)
+    emit('change', lightProps.value)
 }
 
 const lightSchemaJson = {

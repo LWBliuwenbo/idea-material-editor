@@ -1,7 +1,7 @@
 <template>
     <div class="mesh-list-panel">
         <ul class="mesh-list">
-            <li v-for="child in meshs" :key="child.name" @click="select(child)"
+            <li v-for="child in models" :key="child.name" @click="select(child)"
                 >
                 <div class="mesh-card" :class="current.id === child.id ? 'active' : ''">
                     <div class="mesh-image">
@@ -17,15 +17,17 @@
 </template>
 
 <script lang="ts" setup>
-import CubeImage from '@/assets/cube.jpg';
 import SphereImage from '@/assets/sphere.jpg';
+import CircleImage from '@/assets/circle.jpg';
+import TepoImage from '@/assets/tepo.jpg';
+
 
 
 import { ref, defineEmits, toRef } from 'vue';
 
 interface mesh {
-    image: string,
     id: string,
+    modelurl: string
     name: string
 }
 interface Props {
@@ -41,11 +43,27 @@ const emit = defineEmits([
     'change',
     'update:modelValue'
 ])
-const meshs = ref([
+const models = ref([
     {
         image: SphereImage,
+        modelurl: '/materialeditor/model/sphere.obj',
         id: 'Sphere',
-        name: '球体'
+        name: '球体',
+        scale:0.5
+    },
+    {
+        image: CircleImage,
+        modelurl: '/materialeditor/model/circle.obj',
+        id: 'Circle',
+        name: '圆环体',
+        scale:0.5
+    },
+    {
+        image: TepoImage,
+        modelurl: '/materialeditor/model/teapot.obj',
+        id: 'Teapot',
+        name: '壶体',
+        scale:0.1
     }
 ])
 
