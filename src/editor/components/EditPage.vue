@@ -1,7 +1,9 @@
 <template>
     <div class="editor">
         <MeshListPanel v-model="currentModel" @change="changeModel" />
-        <div class="view-panel">
+        <div class="view-panel" 
+         v-loading="loading"
+         element-loading-text="模型加载中">
             <canvas id="editor-canvas" width="1000" height="1000"></canvas>
         </div>
         <!-- <div class="hiderimage-panel" >
@@ -13,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { Engine, Camera, PbrLight, PBRMaterial, Vec3, Texture, Model } from "ideagraphics";
+import { Engine, Camera, PbrLight,CameraView, PBRMaterial, Vec3, Texture, Model } from "ideagraphics";
 
 import { onMounted, ref, nextTick } from "vue";
 import MeshListPanel from "./MeshListPanel.vue";
@@ -41,6 +43,7 @@ interface EditProps {
 }
 
 const camera = new Camera();
+const camera_edit = new Camera();
 const light = new PbrLight();
 
 const currentModel = ref({
@@ -54,15 +57,23 @@ const currentModel = ref({
 
 let engine: Engine;
 
-
+const loading = ref(false)
 const cameraInit = () => {
 
+    camera_edit.lookAt(
+        new Vec3(-0.5, -0.5, 0),
+        new Vec3(0, 0, 0),
+        new Vec3(0, 1, 0)
+    ).persective(45, engine.canvas.width / engine.canvas.height, 0.1, 5);
+
+
     camera.lookAt(
-        new Vec3(0, 0, 3),
+        new Vec3(0, 0, 4),
         new Vec3(0, 0, 0),
         new Vec3(0, 1, 0)
     ).persective(45, engine.canvas.width / engine.canvas.height, 0.1, 5);
 }
+
 
 const engineInit = async () => {
     engine = new Engine('editor-canvas')
@@ -76,12 +87,26 @@ const engineInit = async () => {
     // const cube = new Cube();
     // const mesh = meshs[currentMesh.value.id];
     // engine.addGeo(mesh)
+    const cameraViewer = new CameraView(engine.gl, camera_edit, '/materialeditor/model/camera.obj')
 
+    await cameraViewer.init();
+
+    cameraViewer.scaleAll(0.2);
+    cameraViewer.roateZ(45)
+    cameraViewer.roateX(25)
+
+
+    engine.setCameraViewer(cameraViewer)
 
     const model = new Model(engine.gl, currentModel.value.id)
+    loading.value = true;
     await model.loadOBJ(currentModel.value.modelurl, currentModel.value.scale)
+    loading.value = false;
+
+
 
     engine.addModel(model)
+
 
     await setEnv(false)
     // const ibl = new IBL(engine.gl, cubenv, model, light)
@@ -101,14 +126,18 @@ const propsSet = (props: EditProps) => {
 
 const changeModel = async (modelinfo: ModelProp) => {
     const model = new Model(engine.gl, modelinfo.id)
+    loading.value = true;
     await model.loadOBJ(modelinfo.modelurl, modelinfo.scale)
+    loading.value = false;
     engine.clear();
     engine.addModel(model)
+
     engineRender();
 }
 
 const setEnv = async (showEnv: boolean) => {
     if (showEnv) {
+        loading.value = true;
         const cubenv = await Texture.createCubeTexture(engine.gl, 1321, 1321,
             [
                 './skybox/front.jpg',
@@ -121,6 +150,7 @@ const setEnv = async (showEnv: boolean) => {
 
     
             engine.setEnv(cubenv);
+            loading.value = false;
     
     }else {
         engine.setEnv(null);
