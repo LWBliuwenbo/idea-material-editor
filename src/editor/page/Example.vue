@@ -1,80 +1,62 @@
 <template>
     <div class="editor">
 
-        <div class="view-panel" 
-         v-loading="loading"
-         element-loading-text="模型加载中">
-            <canvas id="editor-canvas" width="1000" height="1000"></canvas>
+        <div class="view-panel">
+            <canvas id="editor-canvas" width="1000" height="1000" ref="canvasref" ></canvas>
         </div>
     </div>
 
 </template>
 
 <script setup lang="ts">
-import { Engine, Camera, PbrLight, Vec3, Model } from "ideagraphics";
+import * as THREE from 'three';
 
 import { onMounted, ref, nextTick } from "vue";
 
-enum MeshID {
-    Sphere = 'Sphere',
-    Teapot = 'Teapot'
-}
+const initScene = (canvas: HTMLCanvasElement) => {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 15);
 
-const camera = new Camera();
-const light = new PbrLight();
-
-const currentModel = ref({
-    id: MeshID.Sphere,
-    modelurl: '/materialeditor/model/cube.obj',
-    name: '球体',
-    scale: 0.2
-})
-
-
-
-let engine: Engine;
-
-const loading = ref(false)
-const cameraInit = () => {
-    camera.lookAt(
-        new Vec3(0, 0, 4),
-        new Vec3(0, 0, 0),
-        new Vec3(0, 1, 0)
-    ).persective(45, engine.canvas.width / engine.canvas.height, 0.1, 5);
-}
-
-
-const engineInit = async () => {
-    engine = new Engine('editor-canvas')
-    engine.setLight(light)
-
-    cameraInit();
-    engine.setCamera(camera)
-    const model = new Model(engine.gl, currentModel.value.id)
-    loading.value = true;
-    await model.loadOBJ(currentModel.value.modelurl, currentModel.value.scale)
-    loading.value = false;
-    engine.addModel(model)
-    engine.drawInit();
-
-
-}
-
-let origin_roate = 0;
-const engineRender = () => {
-
-    engine.scene[0].tranlateX(1);
-    engine.render(()=> {
-        origin_roate += 2;
-        engine.scene[0].roateY(origin_roate);
+    const renderer = new THREE.WebGLRenderer({
+        canvas
     });
+
+    renderer.setClearColor(0xffffff,1)
+
+    const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube1 = new THREE.Mesh(geometry, material);
+    const cube2 = new THREE.Mesh(geometry, material);
+    scene.add(cube1)
+    scene.add(cube2);
+
+    cube1.position.set(-1,0,0);
+    cube2.position.set(1,0,0);
+
+    camera.position.set(1,5,10)
+    camera.up.set(0,1,0)
+    camera.lookAt(cube2.position)
+
+    function animate() {
+        requestAnimationFrame(animate);
+        camera.rotateOnAxis(new THREE.Vector3(0,0,1), 0.01)
+
+        renderer.render(scene, camera);
+    };
+
+    animate();
 }
 
-onMounted(async () => {
-    await nextTick()
-    await engineInit();
-    engineRender();
+const canvasref = ref(null)
+
+
+onMounted(async() => {
+    await nextTick();
+    if(canvasref.value){
+        initScene(canvasref.value)
+    }
 })
+
 
 
 </script>
@@ -83,7 +65,8 @@ onMounted(async () => {
     display: flex;
     justify-content: space-between;
 }
-canvas{
+
+canvas {
     border: 1px solid;
 }
 </style>
